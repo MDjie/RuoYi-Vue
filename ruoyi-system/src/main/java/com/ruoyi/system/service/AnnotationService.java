@@ -13,4 +13,9 @@ public interface AnnotationService {
      * 提交标注信息
      */
     AjaxResult sendLabel(Long userId, String label);
+
+    /**
+     * 查看当前准确率
+     */
+    AjaxResult checkAccuracy(Long userId);
 } 

@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 @Service
 public class RedisDatasetService {
@@ -50,7 +52,7 @@ public class RedisDatasetService {
     /**
      * 加载数据集到Redis
      */
-    private void loadDatasetToRedis(String fileName) {
+    public void loadDatasetToRedis(String fileName) {
         try {
             ClassPathResource resource = new ClassPathResource("datasets/" + fileName);
             List<JSONObject> jsonList = new ArrayList<>();
@@ -65,7 +67,7 @@ public class RedisDatasetService {
 
             // 将每个JSON对象单独存入Redis
             for (int i = 0; i < jsonList.size(); i++) {
-                String key = DATASET_KEY_PREFIX + fileName + ":" + i;
+                String key = DATASET_KEY_PREFIX + fileName + ":" + (i+1);
                 redisTemplate.opsForValue().set(key, jsonList.get(i));
             }
 
@@ -102,51 +104,93 @@ public class RedisDatasetService {
     }
 
     /**
-     * 导出标注数据到JSON文件
-     * @param fileName 原始文件名
-     * @return 新文件名
+     * 导出标注数据
      */
     public String exportAnnotatedData(String fileName) {
         try {
-            // 获取数据集大小
-            Integer size = getDatasetSize(fileName);
-            if (size == null) {
-                throw new RuntimeException("数据集不存在");
-            }
-
-            // 按顺序读取所有数据
-            List<JSONObject> annotatedData = new ArrayList<>();
-            for (int i = 0; i < size; i++) {
-                JSONObject line = getDatasetLine(fileName, i);
-                if (line != null) {
-                    annotatedData.add(line);
-                }
-            }
-
-            // 生成新文件名
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String newFileName = fileName.substring(0, fileName.lastIndexOf(".")) + "_" + timestamp + ".json";
-
-            // 确保输出目录存在
-            File outputDir = new File("annotated_datasets");
+            // 创建输出目录
+            String outputDirPath = "ruoyi-admin/src/main/resources/labeled_datasets";
+            File outputDir = new File(outputDirPath);
             if (!outputDir.exists()) {
                 outputDir.mkdirs();
             }
 
-            // 写入文件
-            try (BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(
-                            new FileOutputStream(new File(outputDir, newFileName)),
-                            StandardCharsets.UTF_8))) {
-                for (JSONObject data : annotatedData) {
-                    writer.write(data.toJSONString());
-                    writer.newLine();
+            // 生成输出文件名
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String outputFileName = fileName.replace(".json", "_" + timestamp + ".json");
+            File outputFile = new File(outputDir, outputFileName);
+
+            // 打印文件路径，用于调试
+            System.out.println("Output file path: " + outputFile.getAbsolutePath());
+
+            // 写入数据，使用UTF-8编码
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
+                Integer datasetSize = getDatasetSize(fileName);
+                if (datasetSize != null) {
+                    for (int i = 0; i < datasetSize; i++) {
+                        JSONObject line = getDatasetLine(fileName, i);
+                        if (line != null) {
+                            writer.write(line.toJSONString());
+                            writer.newLine();
+                        }
+                    }
                 }
             }
 
-            return newFileName;
+            // 确保文件被正确写入
+            if (!outputFile.exists()) {
+                throw new RuntimeException("Failed to create output file: " + outputFile.getAbsolutePath());
+            }
+
+            // 返回相对于classpath的路径
+            return "labeled_datasets/" + outputFileName;
         } catch (Exception e) {
-            throw new RuntimeException("导出标注数据失败: " + e.getMessage(), e);
+            e.printStackTrace(); // 打印完整堆栈信息
+            throw new RuntimeException("导出标注数据失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 导出当前已标注的数据
+     */
+    public String exportCurrentAnnotatedData(String fileName, Integer currentIndex) {
+        try {
+            // 创建输出目录
+            String outputDirPath = "ruoyi-admin/src/main/resources/labeled_datasets";
+            File outputDir = new File(outputDirPath);
+            if (!outputDir.exists()) {
+                outputDir.mkdirs();
+            }
+
+            // 生成输出文件名
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String outputFileName = "current_" + fileName.replace(".json", "_" + timestamp + ".json");
+            File outputFile = new File(outputDir, outputFileName);
+
+            // 打印文件路径，用于调试
+            System.out.println("Output file path: " + outputFile.getAbsolutePath());
+
+            // 写入数据，使用UTF-8编码
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
+                for (int i = 0; i < currentIndex; i++) {
+                    JSONObject line = getDatasetLine(fileName, i);
+                    if (line != null) {
+                        writer.write(line.toJSONString());
+                        writer.newLine();
+                    }
+                }
+            }
+
+            // 确保文件被正确写入
+            if (!outputFile.exists()) {
+                throw new RuntimeException("Failed to create output file: " + outputFile.getAbsolutePath());
+            }
+
+            // 返回相对于classpath的路径
+            return "labeled_datasets/" + outputFileName;
+        } catch (Exception e) {
+            e.printStackTrace(); // 打印完整堆栈信息
+            throw new RuntimeException("导出当前已标注数据失败: " + e.getMessage());
         }
     }
 } 
