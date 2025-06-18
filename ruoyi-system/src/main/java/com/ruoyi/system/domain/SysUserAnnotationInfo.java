@@ -6,19 +6,12 @@ public class SysUserAnnotationInfo extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
     private Long userId;
+    private String datasetName;
+    private Integer currentIndex;
+    private Integer datasetSubSet;
 
     public Long getUserId() {
         return userId;
-    }
-
-    @Override
-    public String toString() {
-        return "SysUserAnnotationInfo{" +
-                "userId=" + userId +
-                ", datasetName='" + datasetName + '\'' +
-                ", currentIndex=" + currentIndex +
-                ", datasetSubSet=" + datasetSubSet +
-                '}';
     }
 
     public void setUserId(Long userId) {
@@ -49,7 +42,13 @@ public class SysUserAnnotationInfo extends BaseEntity {
         this.datasetSubSet = datasetSubSet;
     }
 
-    private String datasetName;
-    private Integer currentIndex;
-    private Integer datasetSubSet;
+    @Override
+    public String toString() {
+        return "SysUserAnnotationInfo{" +
+                "userId=" + userId +
+                ", datasetName='" + datasetName + '\'' +
+                ", currentIndex=" + currentIndex +
+                ", datasetSubSet=" + datasetSubSet +
+                '}';
+    }
 } 

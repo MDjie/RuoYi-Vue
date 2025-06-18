@@ -36,15 +36,36 @@ public class AnnotationServiceImpl implements AnnotationService {
     private RedisDatasetService redisDatasetService;
 
     // 用于存储用户最后一次查看准确率的时间
-    private final Map<Long, Long> lastCheckTimeMap = new ConcurrentHashMap<>();
+    private final Map<String, Long> lastCheckTimeMap = new ConcurrentHashMap<>();
     // 最小间隔时间（毫秒）
     private static final long MIN_INTERVAL = 30000; // 30秒
 
     @Override
-    public AjaxResult getText(Long userId) {
+    public AjaxResult getUserDatasets(Long userId) {
+        try {
+            List<SysUserAnnotationInfo> datasets = annotationInfoMapper.selectByUserId(userId);
+            List<JSONObject> result = new ArrayList<>();
+            
+            for (SysUserAnnotationInfo dataset : datasets) {
+                JSONObject datasetInfo = new JSONObject();
+                datasetInfo.put("datasetName", dataset.getDatasetName());
+                datasetInfo.put("datasetSubSet", dataset.getDatasetSubSet());
+                datasetInfo.put("currentIndex", dataset.getCurrentIndex());
+                datasetInfo.put("displayName", dataset.getDatasetName() + "-" + dataset.getDatasetSubSet());
+                result.add(datasetInfo);
+            }
+            
+            return AjaxResult.success(result);
+        } catch (Exception e) {
+            return AjaxResult.error("获取用户数据集列表失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public AjaxResult getText(Long userId, String datasetName, Integer datasetSubSet) {
         try {
             // 获取用户标注信息
-            SysUserAnnotationInfo annotationInfo = annotationInfoMapper.selectByUserId(userId);
+            SysUserAnnotationInfo annotationInfo = annotationInfoMapper.selectByUserAndDataset(userId, datasetName, datasetSubSet);
             if (annotationInfo == null) {
                 return AjaxResult.error("未找到用户标注信息");
             }
@@ -91,10 +112,10 @@ public class AnnotationServiceImpl implements AnnotationService {
     }
 
     @Override
-    public AjaxResult sendLabel(Long userId, String label) {
+    public AjaxResult sendLabel(Long userId, String datasetName, Integer datasetSubSet, String label) {
         try {
             // 获取用户标注信息
-            SysUserAnnotationInfo annotationInfo = annotationInfoMapper.selectByUserId(userId);
+            SysUserAnnotationInfo annotationInfo = annotationInfoMapper.selectByUserAndDataset(userId, datasetName, datasetSubSet);
             if (annotationInfo == null) {
                 return AjaxResult.error("未找到用户标注信息");
             }
@@ -126,7 +147,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                 
                 // 进行评分
                 String referencePath = "answer_datasets/" + fileName;
-                String testPath = exportedFileName;  // 已经包含了labeled_datasets/前缀
+                String testPath = exportedFileName;  // 现在是绝对路径
                 
                 // 打印文件路径，用于调试
                 System.out.println("Reference path: " + referencePath);
@@ -151,11 +172,14 @@ public class AnnotationServiceImpl implements AnnotationService {
     }
 
     @Override
-    public AjaxResult checkAccuracy(Long userId) {
+    public AjaxResult checkAccuracy(Long userId, String datasetName, Integer datasetSubSet) {
         try {
+            // 生成唯一的时间检查键
+            String timeCheckKey = userId + "_" + datasetName + "_" + datasetSubSet;
+            
             // 检查时间间隔
             long currentTime = System.currentTimeMillis();
-            Long lastCheckTime = lastCheckTimeMap.get(userId);
+            Long lastCheckTime = lastCheckTimeMap.get(timeCheckKey);
             if (lastCheckTime != null) {
                 long timeDiff = currentTime - lastCheckTime;
                 if (timeDiff < MIN_INTERVAL) {
@@ -164,7 +188,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             }
 
             // 获取用户标注信息
-            SysUserAnnotationInfo annotationInfo = annotationInfoMapper.selectByUserId(userId);
+            SysUserAnnotationInfo annotationInfo = annotationInfoMapper.selectByUserAndDataset(userId, datasetName, datasetSubSet);
             if (annotationInfo == null) {
                 return AjaxResult.error("未找到用户标注信息");
             }
@@ -177,7 +201,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             
             // 进行评分
             String referencePath = "answer_datasets/" + fileName;
-            String testPath = exportedFileName;  // 已经包含了labeled_datasets/前缀
+            String testPath = exportedFileName;  // 现在是绝对路径
             
             // 打印文件路径，用于调试
             System.out.println("Reference path: " + referencePath);
@@ -186,10 +210,10 @@ public class AnnotationServiceImpl implements AnnotationService {
             String scoreResult = evaluateAnswers(referencePath, testPath, annotationInfo);
             
             // 更新最后查看时间
-            lastCheckTimeMap.put(userId, currentTime);
+            lastCheckTimeMap.put(timeCheckKey, currentTime);
 
             // 删除临时文件
-            File tempFile = new File("ruoyi-admin/src/main/resources/" + testPath);
+            File tempFile = new File(testPath);
             if (tempFile.exists()) {
                 tempFile.delete();
             }
@@ -230,8 +254,8 @@ public class AnnotationServiceImpl implements AnnotationService {
             int totalQuestions = 0;
             int matchedQuestions = 0;
 
-            // 使用File读取测试文件
-            File testFile = new File("ruoyi-admin/src/main/resources/" + testPath);
+            // 使用File读取测试文件 - testPath现在是绝对路径
+            File testFile = new File(testPath);
             System.out.println("Test file path: " + testFile.getAbsolutePath());
             System.out.println("Test file exists: " + testFile.exists());
             

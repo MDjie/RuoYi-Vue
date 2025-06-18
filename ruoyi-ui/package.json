@@ -1,8 +1,8 @@
 {
-  "name": "ruoyi",
+  "name": "HSC_Annotation_System",
   "version": "3.9.0",
-  "description": "若依管理系统",
-  "author": "若依",
+  "description": "HSC人工标注系统",
+  "author": "djh",
   "license": "MIT",
   "scripts": {
     "dev": "vue-cli-service serve",

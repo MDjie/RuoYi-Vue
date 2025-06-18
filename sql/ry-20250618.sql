@@ -674,12 +674,14 @@ INSERT INTO `sys_user_role` VALUES (100, 2);
 -- ----------------------------
 DROP TABLE IF EXISTS `user_annotation_info`;
 CREATE TABLE `user_annotation_info`  (
-  `user_id` bigint NOT NULL,
-  `dataset_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `current_index` int NOT NULL,
-  `dataset_sub_set` int NOT NULL,
-  PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `dataset_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '数据集名称',
+  `current_index` int NOT NULL DEFAULT 0 COMMENT '当前标注索引',
+  `dataset_sub_set` int NOT NULL COMMENT '数据集子集编号',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`user_id`, `dataset_name`, `dataset_sub_set`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户标注信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of user_annotation_info

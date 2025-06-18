@@ -1,10 +1,22 @@
 import request from '@/utils/request'
 
-// 获取标注文本
-export function getText() {
+// 获取用户可用的数据集列表
+export function getUserDatasets() {
   return request({
-    url: '/annotation/gwtText',
+    url: '/annotation/getUserDatasets',
     method: 'get'
+  })
+}
+
+// 获取标注文本
+export function getText(datasetName, datasetSubSet) {
+  return request({
+    url: '/annotation/getText',
+    method: 'get',
+    params: {
+      datasetName: datasetName,
+      datasetSubSet: datasetSubSet
+    }
   })
 }
 
@@ -18,9 +30,13 @@ export function sendLabel(data) {
 }
 
 // 查看当前准确率
-export function checkAccuracy() {
+export function checkAccuracy(datasetName, datasetSubSet) {
   return request({
     url: '/annotation/checkAccuracy',
-    method: 'get'
+    method: 'get',
+    params: {
+      datasetName: datasetName,
+      datasetSubSet: datasetSubSet
+    }
   })
 }

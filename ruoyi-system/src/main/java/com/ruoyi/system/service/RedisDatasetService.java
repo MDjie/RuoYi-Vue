@@ -4,6 +4,8 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -32,16 +34,14 @@ public class RedisDatasetService {
     @PostConstruct
     public void init() {
         try {
-            // 获取datasets目录下的所有文件
-            ClassPathResource resource = new ClassPathResource("datasets");
-            if (resource.exists()) {
-                String[] files = resource.getFile().list();
-                if (files != null) {
-                    for (String file : files) {
-                        if (file.endsWith(".json")) {
-                            loadDatasetToRedis(file);
-                        }
-                    }
+            // 使用PathMatchingResourcePatternResolver来遍历JAR包内的datasets目录
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            Resource[] resources = resolver.getResources("classpath:datasets/*.json");
+            
+            for (Resource resource : resources) {
+                String fileName = resource.getFilename();
+                if (fileName != null && fileName.endsWith(".json")) {
+                    loadDatasetToRedis(fileName);
                 }
             }
         } catch (Exception e) {
@@ -108,8 +108,8 @@ public class RedisDatasetService {
      */
     public String exportAnnotatedData(String fileName) {
         try {
-            // 创建输出目录
-            String outputDirPath = "ruoyi-admin/src/main/resources/labeled_datasets";
+            // 创建输出目录 - 使用系统临时目录
+            String outputDirPath = System.getProperty("java.io.tmpdir") + File.separator + "labeled_datasets";
             File outputDir = new File(outputDirPath);
             if (!outputDir.exists()) {
                 outputDir.mkdirs();
@@ -127,7 +127,7 @@ public class RedisDatasetService {
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
                 Integer datasetSize = getDatasetSize(fileName);
                 if (datasetSize != null) {
-                    for (int i = 0; i < datasetSize; i++) {
+                    for (int i = 1; i <= datasetSize; i++) {
                         JSONObject line = getDatasetLine(fileName, i);
                         if (line != null) {
                             writer.write(line.toJSONString());
@@ -142,8 +142,8 @@ public class RedisDatasetService {
                 throw new RuntimeException("Failed to create output file: " + outputFile.getAbsolutePath());
             }
 
-            // 返回相对于classpath的路径
-            return "labeled_datasets/" + outputFileName;
+            // 返回文件路径
+            return outputFile.getAbsolutePath();
         } catch (Exception e) {
             e.printStackTrace(); // 打印完整堆栈信息
             throw new RuntimeException("导出标注数据失败: " + e.getMessage());
@@ -155,8 +155,8 @@ public class RedisDatasetService {
      */
     public String exportCurrentAnnotatedData(String fileName, Integer currentIndex) {
         try {
-            // 创建输出目录
-            String outputDirPath = "ruoyi-admin/src/main/resources/labeled_datasets";
+            // 创建输出目录 - 使用系统临时目录
+            String outputDirPath = System.getProperty("java.io.tmpdir") + File.separator + "labeled_datasets";
             File outputDir = new File(outputDirPath);
             if (!outputDir.exists()) {
                 outputDir.mkdirs();
@@ -172,7 +172,7 @@ public class RedisDatasetService {
 
             // 写入数据，使用UTF-8编码
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
-                for (int i = 0; i < currentIndex; i++) {
+                for (int i = 1; i <= currentIndex; i++) {
                     JSONObject line = getDatasetLine(fileName, i);
                     if (line != null) {
                         writer.write(line.toJSONString());
@@ -186,8 +186,8 @@ public class RedisDatasetService {
                 throw new RuntimeException("Failed to create output file: " + outputFile.getAbsolutePath());
             }
 
-            // 返回相对于classpath的路径
-            return "labeled_datasets/" + outputFileName;
+            // 返回文件路径
+            return outputFile.getAbsolutePath();
         } catch (Exception e) {
             e.printStackTrace(); // 打印完整堆栈信息
             throw new RuntimeException("导出当前已标注数据失败: " + e.getMessage());
