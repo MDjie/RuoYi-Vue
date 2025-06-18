@@ -3,7 +3,7 @@
   <el-form ref="form" :model="form" label-width="80px" style="width: 50%;background-color: #c1cdd9;border-radius: 20px" >
 
     <el-form-item label="数据集">
-        <span> 数据集：{{form.datasetName}}  序号： {{form.currentIndex}} 要求准确率：{{form.accuracy}}</span>
+        <span> ：{{form.datasetName}}  序号： {{form.currentIndex}}/{{form.total}} 要求准确率：{{form.accuracy}}</span>
     </el-form-item>
 
     <el-form-item label="文本" >
@@ -17,6 +17,7 @@
 
     <el-form-item>
       <el-button type="primary" @click="onSubmit">提交</el-button>
+      <el-button type="info" @click="checkAccuracy">查看当前准确率</el-button>
     </el-form-item>
   </el-form>
 </div>
@@ -27,7 +28,7 @@
 
 
 <script>
-import { getText, sendLabel } from "@/api/annotation/annotation";
+import { getText, sendLabel, checkAccuracy } from "@/api/annotation/annotation";
 
 export default {
   data() {
@@ -36,6 +37,7 @@ export default {
         datasetName: '',
         currentIndex: 0,
         accuracy: 0,
+        total:0,
         text: '',
         label: '',
         labelOptions: []
@@ -54,6 +56,7 @@ export default {
           this.form.datasetName = data.datasetName
           this.form.currentIndex = data.currentIndex
           this.form.accuracy = data.accuracy
+          this.form.total = data.total
           this.form.text = data.text
           this.form.labelOptions = data.labelOptions
         }
@@ -68,18 +71,44 @@ export default {
       }
       try {
         const response = await sendLabel({
-          label: this.form.label
+          "label": this.form.label
         })
         if (response.code === 200) {
-          this.$message.success('提交成功')
-          // 重新获取数据
-          await this.getData()
-          // 清空标签选择
-          this.form.label = ''
+          // 显示评分结果
+          if (response.msg && response.msg.includes("标注完成")) {
+            this.$alert(response.msg, '标注完成', {
+              confirmButtonText: '确定',
+              callback: action => {
+                // 重新获取数据
+                this.getData()
+                // 清空标签选择
+                this.form.label = ''
+              }
+            })
+          } else {
+            this.$message.success('提交成功')
+            // 重新获取数据
+            await this.getData()
+            // 清空标签选择
+            this.form.label = ''
+          }
         }
       } catch (error) {
         console.error('提交失败:', error)
         this.$message.error('提交失败')
+      }
+    },
+    async checkAccuracy() {
+      try {
+        const response = await checkAccuracy()
+        if (response.code === 200) {
+          this.$alert(response.msg, '当前准确率', {
+            confirmButtonText: '确定'
+          })
+        }
+      } catch (error) {
+        console.error('获取准确率失败:', error)
+        this.$message.error('获取准确率失败')
       }
     }
   }
