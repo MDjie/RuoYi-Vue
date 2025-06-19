@@ -8,6 +8,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
@@ -25,8 +26,21 @@ public class RedisDatasetService {
     @Autowired
     private RedisTemplate<Object, Object> redisTemplate;
 
+    @Value("${ruoyi.profile}")
+    private String profilePath;
+
     private static final String DATASET_KEY_PREFIX = "dataset:";
     private static final String DATASET_INDEX_KEY_PREFIX = "dataset_index:";
+
+    private String getDatasetDir() {
+        return profilePath + File.separator + "annotation" + File.separator + "datasets";
+    }
+    private String getLabeledDir() {
+        return profilePath + File.separator + "annotation" + File.separator + "labeled_datasets";
+    }
+    private String getAnswerDir() {
+        return profilePath + File.separator + "annotation" + File.separator + "answer_datasets";
+    }
 
     /**
      * 应用启动时初始化数据集到Redis
@@ -34,14 +48,15 @@ public class RedisDatasetService {
     @PostConstruct
     public void init() {
         try {
-            // 使用PathMatchingResourcePatternResolver来遍历JAR包内的datasets目录
-            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-            Resource[] resources = resolver.getResources("classpath:datasets/*.json");
-            
-            for (Resource resource : resources) {
-                String fileName = resource.getFilename();
-                if (fileName != null && fileName.endsWith(".json")) {
-                    loadDatasetToRedis(fileName);
+            // 遍历profile/annotation/datasets目录下所有json文件
+            File datasetDir = new File(getDatasetDir());
+            if (!datasetDir.exists()) {
+                datasetDir.mkdirs();
+            }
+            File[] files = datasetDir.listFiles((dir, name) -> name.endsWith(".json"));
+            if (files != null) {
+                for (File file : files) {
+                    loadDatasetToRedis(file.getName());
                 }
             }
         } catch (Exception e) {
@@ -54,11 +69,10 @@ public class RedisDatasetService {
      */
     public void loadDatasetToRedis(String fileName) {
         try {
-            ClassPathResource resource = new ClassPathResource("datasets/" + fileName);
+            File file = new File(getDatasetDir(), fileName);
             List<JSONObject> jsonList = new ArrayList<>();
-            
             try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+                    new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     jsonList.add(JSON.parseObject(line));
@@ -108,21 +122,16 @@ public class RedisDatasetService {
      */
     public String exportAnnotatedData(String fileName) {
         try {
-            // 创建输出目录 - 使用系统临时目录
-            String outputDirPath = System.getProperty("java.io.tmpdir") + File.separator + "labeled_datasets";
+            // 创建输出目录 - 使用profile路径
+            String outputDirPath = getLabeledDir();
             File outputDir = new File(outputDirPath);
             if (!outputDir.exists()) {
                 outputDir.mkdirs();
             }
-
             // 生成输出文件名
             String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
             String outputFileName = fileName.replace(".json", "_" + timestamp + ".json");
             File outputFile = new File(outputDir, outputFileName);
-
-            // 打印文件路径，用于调试
-            System.out.println("Output file path: " + outputFile.getAbsolutePath());
-
             // 写入数据，使用UTF-8编码
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
                 Integer datasetSize = getDatasetSize(fileName);
@@ -136,12 +145,10 @@ public class RedisDatasetService {
                     }
                 }
             }
-
             // 确保文件被正确写入
             if (!outputFile.exists()) {
                 throw new RuntimeException("Failed to create output file: " + outputFile.getAbsolutePath());
             }
-
             // 返回文件路径
             return outputFile.getAbsolutePath();
         } catch (Exception e) {
@@ -155,21 +162,16 @@ public class RedisDatasetService {
      */
     public String exportCurrentAnnotatedData(String fileName, Integer currentIndex) {
         try {
-            // 创建输出目录 - 使用系统临时目录
-            String outputDirPath = System.getProperty("java.io.tmpdir") + File.separator + "labeled_datasets";
+            // 创建输出目录 - 使用profile路径
+            String outputDirPath = getLabeledDir();
             File outputDir = new File(outputDirPath);
             if (!outputDir.exists()) {
                 outputDir.mkdirs();
             }
-
             // 生成输出文件名
             String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
             String outputFileName = "current_" + fileName.replace(".json", "_" + timestamp + ".json");
             File outputFile = new File(outputDir, outputFileName);
-
-            // 打印文件路径，用于调试
-            System.out.println("Output file path: " + outputFile.getAbsolutePath());
-
             // 写入数据，使用UTF-8编码
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
                 for (int i = 1; i <= currentIndex; i++) {
@@ -180,12 +182,10 @@ public class RedisDatasetService {
                     }
                 }
             }
-
             // 确保文件被正确写入
             if (!outputFile.exists()) {
                 throw new RuntimeException("Failed to create output file: " + outputFile.getAbsolutePath());
             }
-
             // 返回文件路径
             return outputFile.getAbsolutePath();
         } catch (Exception e) {

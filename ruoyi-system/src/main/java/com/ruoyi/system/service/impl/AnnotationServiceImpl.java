@@ -12,6 +12,7 @@ import com.ruoyi.system.service.RedisDatasetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,10 +36,23 @@ public class AnnotationServiceImpl implements AnnotationService {
     @Autowired
     private RedisDatasetService redisDatasetService;
 
+    @Value("${ruoyi.profile}")
+    private String profilePath;
+
     // 用于存储用户最后一次查看准确率的时间
     private final Map<String, Long> lastCheckTimeMap = new ConcurrentHashMap<>();
     // 最小间隔时间（毫秒）
     private static final long MIN_INTERVAL = 30000; // 30秒
+
+    private String getDatasetDir() {
+        return profilePath + File.separator + "annotation" + File.separator + "datasets";
+    }
+    private String getLabeledDir() {
+        return profilePath + File.separator + "annotation" + File.separator + "labeled_datasets";
+    }
+    private String getAnswerDir() {
+        return profilePath + File.separator + "annotation" + File.separator + "answer_datasets";
+    }
 
     @Override
     public AjaxResult getUserDatasets(Long userId) {
@@ -149,9 +163,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                 String referencePath = "answer_datasets/" + fileName;
                 String testPath = exportedFileName;  // 现在是绝对路径
                 
-                // 打印文件路径，用于调试
-                System.out.println("Reference path: " + referencePath);
-                System.out.println("Test path: " + testPath);
+    
                 
                 String scoreResult = evaluateAnswers(referencePath, testPath, annotationInfo);
                 if(scoreResult.contains("未达到准确率要求")){
@@ -203,9 +215,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             String referencePath = "answer_datasets/" + fileName;
             String testPath = exportedFileName;  // 现在是绝对路径
             
-            // 打印文件路径，用于调试
-            System.out.println("Reference path: " + referencePath);
-            System.out.println("Test path: " + testPath);
+           
             
             String scoreResult = evaluateAnswers(referencePath, testPath, annotationInfo);
             
@@ -232,9 +242,8 @@ public class AnnotationServiceImpl implements AnnotationService {
         try {
             // 读取参考答案文件，建立text到answer的映射
             Map<String, String> referenceMap = new HashMap<>();
-            ClassPathResource referenceResource = new ClassPathResource(referencePath);
-            System.out.println("Reference file exists: " + referenceResource.exists());
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(referenceResource.getInputStream(), StandardCharsets.UTF_8))) {
+            File referenceFile = new File(getAnswerDir(), referencePath.substring(referencePath.lastIndexOf("/") + 1));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(referenceFile), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     try {
@@ -256,8 +265,7 @@ public class AnnotationServiceImpl implements AnnotationService {
 
             // 使用File读取测试文件 - testPath现在是绝对路径
             File testFile = new File(testPath);
-            System.out.println("Test file path: " + testFile.getAbsolutePath());
-            System.out.println("Test file exists: " + testFile.exists());
+        
             
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(testFile), StandardCharsets.UTF_8))) {
                 String line;
