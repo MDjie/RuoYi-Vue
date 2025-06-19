@@ -11,16 +11,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="datasetSubSet" column="dataset_sub_set"/>
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
+        <result property="relabelRound" column="relabel_round"/>
     </resultMap>
 
     <select id="selectByUserId" parameterType="Long" resultMap="SysUserAnnotationInfoResult">
-        select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time
+        select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time, relabel_round
         from user_annotation_info
         where user_id = #{userId}
     </select>
 
     <select id="selectByUserAndDataset" resultMap="SysUserAnnotationInfoResult">
-        select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time
+        select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time, relabel_round
         from user_annotation_info
         where user_id = #{userId} 
         and dataset_name = #{datasetName} 
@@ -30,6 +31,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateAnnotationInfo" parameterType="com.ruoyi.hsc.domain.SysUserAnnotationInfo">
         update user_annotation_info
         set current_index = #{currentIndex},
+            relabel_round = #{relabelRound},
             update_time = CURRENT_TIMESTAMP
         where user_id = #{userId}
         and dataset_name = #{datasetName} 
@@ -38,9 +40,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insertAnnotationInfo" parameterType="com.ruoyi.hsc.domain.SysUserAnnotationInfo">
         insert into user_annotation_info (
-            user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time
+            user_id, dataset_name, current_index, dataset_sub_set, relabel_round, create_time, update_time
         ) values (
-            #{userId}, #{datasetName}, #{currentIndex}, #{datasetSubSet}, 
+            #{userId}, #{datasetName}, #{currentIndex}, #{datasetSubSet}, #{relabelRound},
             CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
         )
     </insert>

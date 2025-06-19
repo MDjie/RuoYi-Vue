@@ -18,6 +18,8 @@
         <div class="dataset-info">
           <span class="info-label">数据集：</span>
           <span class="info-value">{{form.datasetName}}</span>
+          <span class="info-label">标注轮次：</span>
+          <span class="info-value">{{form.relabel_round}}</span>
           <span class="info-label">序号：</span>
           <span class="info-value">{{form.currentIndex}}/{{form.total}}</span>
           <span class="info-label">要求准确率：</span>
@@ -51,6 +53,156 @@
 </div>
 </template>
 
+<script>
+import { getUserDatasets, getText, sendLabel, checkAccuracy } from "@/api/annotation/annotation";
+
+export default {
+  data() {
+    return {
+      form: {
+        selectedDatasetKey: '',
+        datasetOptions: [],
+        datasetName: '',
+        currentIndex: 0,
+        accuracy: 0,
+        total: 0,
+        text: '',
+        label: '',
+        labelOptions: [],
+        relabel_round:1
+      }
+    }
+  },
+  computed: {
+    currentSelectedDataset() {
+      if (!this.form.selectedDatasetKey || this.form.datasetOptions.length === 0) {
+        return null
+      }
+      return this.form.datasetOptions.find(item => 
+        (item.datasetName + '-' + item.datasetSubSet) === this.form.selectedDatasetKey
+      )
+    }
+  },
+  created() {
+    this.getUserDatasets()
+  },
+  methods: {
+    async getUserDatasets() {
+      try {
+        const response = await getUserDatasets()
+        if (response.code === 200) {
+          this.form.datasetOptions = response.data
+          if (this.form.datasetOptions.length > 0) {
+            // 设置第一个数据集为默认选中
+            this.form.selectedDatasetKey = this.form.datasetOptions[0].datasetName + '-' + this.form.datasetOptions[0].datasetSubSet
+            this.onDatasetChange()
+          }
+        }
+      } catch (error) {
+        console.error('获取用户数据集失败:', error)
+        this.$message.error('获取用户数据集失败')
+      }
+    },
+    async onDatasetChange() {
+      if (this.currentSelectedDataset) {
+        await this.getData()
+      }
+    },
+    async getData() {
+      if (!this.currentSelectedDataset) {
+        return
+      }
+      try {
+        const response = await getText(this.currentSelectedDataset.datasetName, this.currentSelectedDataset.datasetSubSet)
+        if (response.code === 200) {
+          const data = response.data
+          this.form.datasetName = data.datasetName
+          this.form.currentIndex = data.currentIndex
+          this.form.accuracy = data.accuracy
+          this.form.total = data.total
+          this.form.text = data.text
+          this.form.labelOptions = data.labelOptions
+          this.form.relabel_round=data.relabel_round
+        }
+      } catch (error) {
+        console.error('获取数据失败:', error)
+        this.$message.error('获取数据失败')
+      }
+    },
+    async onSubmit() {
+      if (!this.currentSelectedDataset) {
+        this.$message.warning('请先选择数据集')
+        return
+      }
+      if (!this.form.label) {
+        this.$message.warning('请选择标签')
+        return
+      }
+      try {
+        const response = await sendLabel({
+          "datasetName": this.currentSelectedDataset.datasetName,
+          "datasetSubSet": this.currentSelectedDataset.datasetSubSet,
+          "label": this.form.label
+        })
+        if (response.code === 200) {
+          // 显示评分结果
+          if (response.msg && response.msg.includes("标注完成")) {
+            this.$alert(response.msg, '标注完成', {
+              confirmButtonText: '确定',
+              customClass: 'mobile-alert',
+              dangerouslyUseHTMLString: false,
+              closeOnClickModal: true,
+              closeOnPressEscape: true,
+              showCancelButton: false,
+              center: false,
+              showClose: true,
+              callback: action => {
+                // 重新获取数据
+                  this.getData()
+                // 清空标签选择
+                this.form.label = ''
+              }
+            })
+          } else {
+            this.$message.success('提交成功')
+            // 重新获取数据
+            await this.getData()
+            // 清空标签选择
+            this.form.label = ''
+          }
+        }
+      } catch (error) {
+        console.error('提交失败:', error)
+        this.$message.error('提交失败')
+      }
+    },
+    async checkAccuracy() {
+      if (!this.currentSelectedDataset) {
+        this.$message.warning('请先选择数据集')
+        return
+      }
+      try {
+        const response = await checkAccuracy(this.currentSelectedDataset.datasetName, this.currentSelectedDataset.datasetSubSet)
+        if (response.code === 200) {
+          this.$alert(response.msg, '当前准确率', {
+            confirmButtonText: '确定',
+            customClass: 'mobile-alert',
+            dangerouslyUseHTMLString: false,
+            closeOnClickModal: true,
+            closeOnPressEscape: true,
+            showCancelButton: false,
+            center: false,
+            showClose: true
+          })
+        }
+      } catch (error) {
+        console.error('获取准确率失败:', error)
+        this.$message.error('获取准确率失败')
+      }
+    }
+  }
+}
+</script>
 <style scoped>
 /* 响应式容器 */
 .annotation-container {
@@ -536,152 +688,4 @@
 </style>
 
 
-<script>
-import { getUserDatasets, getText, sendLabel, checkAccuracy } from "@/api/annotation/annotation";
-
-export default {
-  data() {
-    return {
-      form: {
-        selectedDatasetKey: '',
-        datasetOptions: [],
-        datasetName: '',
-        currentIndex: 0,
-        accuracy: 0,
-        total: 0,
-        text: '',
-        label: '',
-        labelOptions: []
-      }
-    }
-  },
-  computed: {
-    currentSelectedDataset() {
-      if (!this.form.selectedDatasetKey || this.form.datasetOptions.length === 0) {
-        return null
-      }
-      return this.form.datasetOptions.find(item => 
-        (item.datasetName + '-' + item.datasetSubSet) === this.form.selectedDatasetKey
-      )
-    }
-  },
-  created() {
-    this.getUserDatasets()
-  },
-  methods: {
-    async getUserDatasets() {
-      try {
-        const response = await getUserDatasets()
-        if (response.code === 200) {
-          this.form.datasetOptions = response.data
-          if (this.form.datasetOptions.length > 0) {
-            // 设置第一个数据集为默认选中
-            this.form.selectedDatasetKey = this.form.datasetOptions[0].datasetName + '-' + this.form.datasetOptions[0].datasetSubSet
-            this.onDatasetChange()
-          }
-        }
-      } catch (error) {
-        console.error('获取用户数据集失败:', error)
-        this.$message.error('获取用户数据集失败')
-      }
-    },
-    async onDatasetChange() {
-      if (this.currentSelectedDataset) {
-        await this.getData()
-      }
-    },
-    async getData() {
-      if (!this.currentSelectedDataset) {
-        return
-      }
-      try {
-        const response = await getText(this.currentSelectedDataset.datasetName, this.currentSelectedDataset.datasetSubSet)
-        if (response.code === 200) {
-          const data = response.data
-          this.form.datasetName = data.datasetName
-          this.form.currentIndex = data.currentIndex
-          this.form.accuracy = data.accuracy
-          this.form.total = data.total
-          this.form.text = data.text
-          this.form.labelOptions = data.labelOptions
-        }
-      } catch (error) {
-        console.error('获取数据失败:', error)
-        this.$message.error('获取数据失败')
-      }
-    },
-    async onSubmit() {
-      if (!this.currentSelectedDataset) {
-        this.$message.warning('请先选择数据集')
-        return
-      }
-      if (!this.form.label) {
-        this.$message.warning('请选择标签')
-        return
-      }
-      try {
-        const response = await sendLabel({
-          "datasetName": this.currentSelectedDataset.datasetName,
-          "datasetSubSet": this.currentSelectedDataset.datasetSubSet,
-          "label": this.form.label
-        })
-        if (response.code === 200) {
-          // 显示评分结果
-          if (response.msg && response.msg.includes("标注完成")) {
-            this.$alert(response.msg, '标注完成', {
-              confirmButtonText: '确定',
-              customClass: 'mobile-alert',
-              dangerouslyUseHTMLString: false,
-              closeOnClickModal: true,
-              closeOnPressEscape: true,
-              showCancelButton: false,
-              center: false,
-              showClose: true,
-              callback: action => {
-                // 重新获取数据
-                this.getData()
-                // 清空标签选择
-                this.form.label = ''
-              }
-            })
-          } else {
-            this.$message.success('提交成功')
-            // 重新获取数据
-            await this.getData()
-            // 清空标签选择
-            this.form.label = ''
-          }
-        }
-      } catch (error) {
-        console.error('提交失败:', error)
-        this.$message.error('提交失败')
-      }
-    },
-    async checkAccuracy() {
-      if (!this.currentSelectedDataset) {
-        this.$message.warning('请先选择数据集')
-        return
-      }
-      try {
-        const response = await checkAccuracy(this.currentSelectedDataset.datasetName, this.currentSelectedDataset.datasetSubSet)
-        if (response.code === 200) {
-          this.$alert(response.msg, '当前准确率', {
-            confirmButtonText: '确定',
-            customClass: 'mobile-alert',
-            dangerouslyUseHTMLString: false,
-            closeOnClickModal: true,
-            closeOnPressEscape: true,
-            showCancelButton: false,
-            center: false,
-            showClose: true
-          })
-        }
-      } catch (error) {
-        console.error('获取准确率失败:', error)
-        this.$message.error('获取准确率失败')
-      }
-    }
-  }
-}
-</script>
 

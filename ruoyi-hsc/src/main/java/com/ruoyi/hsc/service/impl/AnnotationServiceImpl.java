@@ -3,7 +3,6 @@ package com.ruoyi.hsc.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.hsc.consts.DatasetConfig;
 import com.ruoyi.hsc.domain.SysUserAnnotationInfo;
 import com.ruoyi.hsc.mapper.SysUserAnnotationInfoMapper;
 import com.ruoyi.hsc.service.AnnotationService;
@@ -18,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -93,7 +93,7 @@ public class AnnotationServiceImpl implements AnnotationService {
 
             // 检查是否已完成标注
             if (annotationInfo.getCurrentIndex() > datasetSize) {
-                return AjaxResult.error("标注已完成");
+                return AjaxResult.success("标注已完成");
             }
 
             // 从Redis获取当前行的JSON对象
@@ -103,7 +103,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             }
 
             // 获取数据集配置
-            JSONObject datasetConfig = DatasetConfig.DATASET_CONFIG.getJSONObject(annotationInfo.getDatasetName());
+            JSONObject datasetConfig = redisDatasetService.getDatasetConfigByName(datasetName);
             if (datasetConfig == null) {
                 return AjaxResult.error("未找到数据集配置信息");
             }
@@ -116,6 +116,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             result.put("text", currentText.getString("text"));
             result.put("total", datasetSize);
             result.put("labelOptions", getLabelOptions(datasetConfig));
+            result.put("relabel_round",annotationInfo.getRelabelRound());
 
             return AjaxResult.success(result);
         } catch (Exception e) {
@@ -146,32 +147,47 @@ public class AnnotationServiceImpl implements AnnotationService {
             
             // 更新Redis中的数据
             redisDatasetService.updateDatasetLine(fileName, annotationInfo.getCurrentIndex(), currentJson);
-
+          
             // 更新数据库中的current_index
             annotationInfo.setCurrentIndex(annotationInfo.getCurrentIndex() + 1);
             annotationInfoMapper.updateAnnotationInfo(annotationInfo);
-
+            String referencePath = "answer_datasets/" + fileName;
             // 检查是否完成标注
             Integer datasetSize = redisDatasetService.getDatasetSize(fileName);
+           
             if (annotationInfo.getCurrentIndex() > datasetSize) {
-                // 导出标注数据
-                String exportedFileName = redisDatasetService.exportAnnotatedData(fileName);
-                
-                // 进行评分
-                String referencePath = "answer_datasets/" + fileName;
-                String testPath = exportedFileName;  // 现在是绝对路径
-                
-    
-                
-                String scoreResult = evaluateAnswers(referencePath, testPath, annotationInfo);
-                if(scoreResult.contains("未达到准确率要求")){
-                    annotationInfo.setCurrentIndex(1);
-                    annotationInfoMapper.updateAnnotationInfo(annotationInfo);
-                    redisDatasetService.loadDatasetToRedis(fileName);
-                    return AjaxResult.error("标注准确率未达到要求，请重新开始标注");
+                String exportedFileName;
+                if (annotationInfo.getRelabelRound() == null || annotationInfo.getRelabelRound() == 1) {
+                    // 第一次标注完成
+                    exportedFileName = redisDatasetService.exportAnnotatedData(fileName);
+                    String scoreResult = evaluateAnswers(referencePath, exportedFileName, annotationInfo);
+                    if (scoreResult.contains("未达到准确率要求")) {
+                        // relabel，currentIndex=1，relabelRound=2
+                        AjaxResult ajaxResult=relabel(userId, datasetName, datasetSubSet, 1);
+                        if(ajaxResult.isError())
+                        return ajaxResult;
+                        return AjaxResult.error("第一轮标注完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分数据，请进入第二轮标注");
+                    }
+                    return AjaxResult.success("标注完成，数据已导出到文件：" + exportedFileName + "   评分结果：" + scoreResult);
+                } else if (annotationInfo.getRelabelRound() == 2) {
+                    // 第二次标注完成
+                    exportedFileName = redisDatasetService.updateToAnswerFile(fileName);
+                    String scoreResult = evaluateAnswers(referencePath, exportedFileName, annotationInfo);
+                    if (scoreResult.contains("未达到准确率要求")) {
+                        // relabel，currentIndex=1，relabelRound=3
+                        AjaxResult ajaxResult=relabel(userId, datasetName, datasetSubSet, 2);
+                        if(ajaxResult.isError())
+                        return ajaxResult;
+                        else
+                        return AjaxResult.error("第二轮标注完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分数据，请进入第三轮标注");
+                    }
+                    return AjaxResult.success("第二轮标注完成，数据已导出到文件，评分结果：" + scoreResult);
+                } else {
+                    // 第三次标注完成
+                    exportedFileName = redisDatasetService.updateToAnswerFile(fileName);
+                    String scoreResult = evaluateAnswers(referencePath, exportedFileName, annotationInfo);
+                    return AjaxResult.success("第三轮标注完成，数据已导出到文件，最终评分结果：" + scoreResult);
                 }
-                
-                return AjaxResult.success("标注完成，数据已导出到文件：" + exportedFileName + "\n评分结果：" + scoreResult);
             }
 
             return AjaxResult.success();
@@ -360,7 +376,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             result.append(String.format("F1分数: %.4f\n", f1));
 
             // 获取数据集配置中的准确率要求
-            JSONObject datasetConfig = DatasetConfig.DATASET_CONFIG.getJSONObject(annotationInfo.getDatasetName());
+            JSONObject datasetConfig = redisDatasetService.getDatasetConfigByName(annotationInfo.getDatasetName());
             if (datasetConfig != null) {
                 int requiredAccuracy = datasetConfig.getInteger("accuracy");
                 result.append("\n准确率要求: ").append(requiredAccuracy).append("%\n");
@@ -398,5 +414,82 @@ public class AnnotationServiceImpl implements AnnotationService {
         }
         
         return options;
+    }
+
+    @Override
+    public AjaxResult relabel(Long userId, String datasetName, Integer datasetSubSet, int round) {
+        try {
+            // 1. 获取用户标注信息
+            SysUserAnnotationInfo annotationInfo = annotationInfoMapper.selectByUserAndDataset(userId, datasetName, datasetSubSet);
+            if (annotationInfo == null) {
+                return AjaxResult.error("未找到用户标注信息");
+            }
+            String fileName = annotationInfo.getDatasetName() + "-" + annotationInfo.getDatasetSubSet() + ".json";
+            String labeledDir = getLabeledDir();
+            String answerDir = getAnswerDir();
+            // 2. 找到上轮标注文件和参考答案文件
+            File userFile = new File(labeledDir, fileName); // 假设每轮都覆盖
+            File answerFile = new File(answerDir, fileName);
+            if (!userFile.exists() || !answerFile.exists()) {
+                return AjaxResult.error("标注文件或答案文件不存在");
+            }
+            // 3. 读取参考答案，建立text->answer映射
+            Map<String, String> answerMap = new HashMap<>();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(answerFile), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    JSONObject obj = JSON.parseObject(line);
+                    answerMap.put(obj.getString("text"), obj.getString("Human_Answer"));
+                }
+            }
+            // 4. 读取用户标注，分为答对和答错两组，记录origin_line
+            List<JSONObject> correctList = new ArrayList<>();
+            List<JSONObject> wrongList = new ArrayList<>();
+            List<JSONObject> allUserData = new ArrayList<>();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(userFile), StandardCharsets.UTF_8))) {
+                String line;
+                int lineNum = 1;
+                while ((line = reader.readLine()) != null) {
+                    JSONObject obj = JSON.parseObject(line);
+                    obj.put("origin_line", lineNum);
+                    allUserData.add(obj);
+                    String text = obj.getString("text");
+                    String userAns = obj.getString("Human_Answer");
+                    String refAns = answerMap.get(text);
+                    if (refAns != null && refAns.equals(userAns)) {
+                        correctList.add(obj);
+                    } else {
+                        wrongList.add(obj);
+                    }
+                    lineNum++;
+                }
+            }
+            // 5. 从答对组随机取与答错组等量数据
+            Collections.shuffle(correctList);
+            int n = wrongList.size();
+            List<JSONObject> mergedList = new ArrayList<>(wrongList);
+            if (correctList.size() > n) {
+                mergedList.addAll(correctList.subList(0, n));
+            } else {
+                mergedList.addAll(correctList);
+            }
+            // 6. 打乱合并后的数据
+            Collections.shuffle(mergedList);
+            // 7. 更新Redis缓存（删除原有，写入新数据，更新数据集大小）
+            redisDatasetService.clearDatasetCache(fileName);
+            for (int i = 0; i < mergedList.size(); i++) {
+                redisDatasetService.updateDatasetLine(fileName, i + 1, mergedList.get(i));
+            }
+            redisDatasetService.updateDatasetSize(fileName, mergedList.size());
+            // 8. 更新数据库current_index=1，relabel_round+1
+            annotationInfo.setCurrentIndex(1);
+            annotationInfo.setRelabelRound(round + 1);
+            annotationInfoMapper.updateAnnotationInfo(annotationInfo);
+            
+            return AjaxResult.success("");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return AjaxResult.error("relabel失败：" + e.getMessage());
+        }
     }
 }

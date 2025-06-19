@@ -23,4 +23,9 @@ public interface AnnotationService {
      * 查看当前准确率
      */
     AjaxResult checkAccuracy(Long userId, String datasetName, Integer datasetSubSet);
+
+    /**
+     * 重新标注（relabel）
+     */
+    AjaxResult relabel(Long userId, String datasetName, Integer datasetSubSet, int round);
 } 
