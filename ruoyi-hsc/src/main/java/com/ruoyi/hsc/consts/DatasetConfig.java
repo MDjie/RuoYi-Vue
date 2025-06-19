@@ -1,4 +1,4 @@
-package com.ruoyi.system.consts;
+package com.ruoyi.hsc.consts;
 
 import com.alibaba.fastjson2.JSONObject;
 

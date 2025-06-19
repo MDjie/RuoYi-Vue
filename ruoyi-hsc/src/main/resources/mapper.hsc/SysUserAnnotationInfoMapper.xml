@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.ruoyi.system.mapper.SysUserAnnotationInfoMapper">
+<mapper namespace="com.ruoyi.hsc.mapper.SysUserAnnotationInfoMapper">
     
-    <resultMap type="com.ruoyi.system.domain.SysUserAnnotationInfo" id="SysUserAnnotationInfoResult">
+    <resultMap type="com.ruoyi.hsc.domain.SysUserAnnotationInfo" id="SysUserAnnotationInfoResult">
         <result property="userId" column="user_id"/>
         <result property="datasetName" column="dataset_name"/>
         <result property="currentIndex" column="current_index"/>
@@ -27,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and dataset_sub_set = #{datasetSubSet}
     </select>
 
-    <update id="updateAnnotationInfo" parameterType="com.ruoyi.system.domain.SysUserAnnotationInfo">
+    <update id="updateAnnotationInfo" parameterType="com.ruoyi.hsc.domain.SysUserAnnotationInfo">
         update user_annotation_info
         set current_index = #{currentIndex},
             update_time = CURRENT_TIMESTAMP
@@ -36,7 +36,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and dataset_sub_set = #{datasetSubSet}
     </update>
 
-    <insert id="insertAnnotationInfo" parameterType="com.ruoyi.system.domain.SysUserAnnotationInfo">
+    <insert id="insertAnnotationInfo" parameterType="com.ruoyi.hsc.domain.SysUserAnnotationInfo">
         insert into user_annotation_info (
             user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time
         ) values (

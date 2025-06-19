@@ -1,6 +1,6 @@
-package com.ruoyi.system.mapper;
+package com.ruoyi.hsc.mapper;
 
-import com.ruoyi.system.domain.SysUserAnnotationInfo;
+import com.ruoyi.hsc.domain.SysUserAnnotationInfo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

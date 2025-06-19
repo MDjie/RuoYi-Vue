@@ -1,4 +1,4 @@
-package com.ruoyi.system.service;
+package com.ruoyi.hsc.service;
 
 import com.ruoyi.common.core.domain.AjaxResult;
 

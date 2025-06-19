@@ -1,16 +1,14 @@
-package com.ruoyi.system.service.impl;
+package com.ruoyi.hsc.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.common.utils.SecurityUtils;
-import com.ruoyi.system.consts.DatasetConfig;
-import com.ruoyi.system.domain.SysUserAnnotationInfo;
-import com.ruoyi.system.mapper.SysUserAnnotationInfoMapper;
-import com.ruoyi.system.service.AnnotationService;
-import com.ruoyi.system.service.RedisDatasetService;
+import com.ruoyi.hsc.consts.DatasetConfig;
+import com.ruoyi.hsc.domain.SysUserAnnotationInfo;
+import com.ruoyi.hsc.mapper.SysUserAnnotationInfoMapper;
+import com.ruoyi.hsc.service.AnnotationService;
+import com.ruoyi.hsc.service.RedisDatasetService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 

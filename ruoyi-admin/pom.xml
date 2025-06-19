@@ -54,7 +54,11 @@
             <groupId>com.ruoyi</groupId>
             <artifactId>ruoyi-quartz</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-hsc</artifactId>
+            <version>3.9.0</version>
+        </dependency>
         <!-- 代码生成-->
         <dependency>
             <groupId>com.ruoyi</groupId>
