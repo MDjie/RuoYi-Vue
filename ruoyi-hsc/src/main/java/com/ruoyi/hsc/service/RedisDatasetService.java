@@ -170,7 +170,10 @@ public class RedisDatasetService {
                     for (int i = 1; i <= datasetSize; i++) {
                         JSONObject line = getDatasetLine(fileName, i);
                         if (line != null) {
-                            writer.write(line.toJSONString());
+                            JSONObject outputJson = new JSONObject();
+                            outputJson.put("text", line.getString("text"));
+                            outputJson.put("Human_Answer", line.getString("Human_Answer"));
+                            writer.write(outputJson.toJSONString());
                             writer.newLine();
                         }
                     }
@@ -291,7 +294,10 @@ public class RedisDatasetService {
             // 5. 覆盖写回原始文件
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(labeledFile, false), StandardCharsets.UTF_8))) {
                 for (JSONObject obj : originalList) {
-                    writer.write(obj.toJSONString());
+                    JSONObject outputJson = new JSONObject();
+                    outputJson.put("text", obj.getString("text"));
+                    outputJson.put("Human_Answer", obj.getString("Human_Answer"));
+                    writer.write(outputJson.toJSONString());
                     writer.newLine();
                 }
             }

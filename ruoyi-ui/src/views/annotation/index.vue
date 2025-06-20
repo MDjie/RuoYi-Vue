@@ -29,7 +29,7 @@
 
       <el-form-item label="文本" class="text-item">
         <el-input 
-          disabled="true" 
+          :disabled="true" 
           type="textarea" 
           :autosize="{ minRows: 3, maxRows: 8}"  
           v-model="form.text" 
@@ -123,6 +123,11 @@ export default {
           this.form.text = data.text
           this.form.labelOptions = data.labelOptions
           this.form.relabel_round=data.relabel_round
+          if(response.msg && response.msg.includes("标注已完成")){
+            this.form.currentIndex;
+            this.$message.success('标注已完成')
+            return
+          }
         }
       } catch (error) {
         console.error('获取数据失败:', error)
@@ -146,29 +151,22 @@ export default {
         })
         if (response.code === 200) {
           // 显示评分结果
-          if (response.msg && response.msg.includes("标注完成")) {
-            this.$alert(response.msg, '标注完成', {
-              confirmButtonText: '确定',
-              customClass: 'mobile-alert',
-              dangerouslyUseHTMLString: false,
-              closeOnClickModal: true,
-              closeOnPressEscape: true,
-              showCancelButton: false,
-              center: false,
-              showClose: true,
-              callback: action => {
-                // 重新获取数据
-                  this.getData()
-                // 清空标签选择
-                this.form.label = ''
-              }
-            })
-          } else {
-            this.$message.success('提交成功')
-            // 重新获取数据
-            await this.getData()
+          if (response.msg && response.msg.includes("标注已完成")) {
+            const isFailed = response.msg.includes("未达到准确率要求");
+            this.$message(
+             response.msg
+          );
+          if(isFailed){
+          await this.getData();
             // 清空标签选择
-            this.form.label = ''
+            this.form.label = '';
+            }
+          } else {
+            this.$message.success('提交成功');
+            // 重新获取数据
+            await this.getData();
+            // 清空标签选择
+            this.form.label = '';
           }
         }
       } catch (error) {

@@ -90,24 +90,35 @@ public class AnnotationServiceImpl implements AnnotationService {
             if (datasetSize == null) {
                 return AjaxResult.error("未找到数据集");
             }
+          
+             // 获取数据集配置
+             JSONObject datasetConfig = redisDatasetService.getDatasetConfigByName(datasetName);
+             if (datasetConfig == null) {
+                 return AjaxResult.error("未找到数据集配置信息");
+             }
+           
+             if (annotationInfo.getCurrentIndex() > datasetSize) {
 
-            // 检查是否已完成标注
-            if (annotationInfo.getCurrentIndex() > datasetSize) {
-                return AjaxResult.success("标注已完成");
+                // 构建返回数据
+            JSONObject result = new JSONObject();
+            result.put("datasetName", annotationInfo.getDatasetName());
+            result.put("currentIndex", annotationInfo.getCurrentIndex()-1);
+            result.put("accuracy",datasetConfig.getInteger("accuracy"));
+            result.put("text", "已完成标注");
+            result.put("total", datasetSize);
+            result.put("labelOptions", getLabelOptions(datasetConfig));
+            result.put("relabel_round",annotationInfo.getRelabelRound());
+            return AjaxResult.success("标注已完成",result);
             }
-
+            
             // 从Redis获取当前行的JSON对象
             JSONObject currentText = redisDatasetService.getDatasetLine(fileName, annotationInfo.getCurrentIndex());
             if (currentText == null) {
                 return AjaxResult.error("获取标注文本失败");
             }
 
-            // 获取数据集配置
-            JSONObject datasetConfig = redisDatasetService.getDatasetConfigByName(datasetName);
-            if (datasetConfig == null) {
-                return AjaxResult.error("未找到数据集配置信息");
-            }
-
+           
+            
             // 构建返回数据
             JSONObject result = new JSONObject();
             result.put("datasetName", annotationInfo.getDatasetName());
@@ -117,7 +128,8 @@ public class AnnotationServiceImpl implements AnnotationService {
             result.put("total", datasetSize);
             result.put("labelOptions", getLabelOptions(datasetConfig));
             result.put("relabel_round",annotationInfo.getRelabelRound());
-
+             // 检查是否已完成标注
+           
             return AjaxResult.success(result);
         } catch (Exception e) {
             return AjaxResult.error("获取标注文本失败：" + e.getMessage());
@@ -127,15 +139,19 @@ public class AnnotationServiceImpl implements AnnotationService {
     @Override
     public AjaxResult sendLabel(Long userId, String datasetName, Integer datasetSubSet, String label) {
         try {
+
             // 获取用户标注信息
             SysUserAnnotationInfo annotationInfo = annotationInfoMapper.selectByUserAndDataset(userId, datasetName, datasetSubSet);
             if (annotationInfo == null) {
                 return AjaxResult.error("未找到用户标注信息");
             }
-
+            
             // 构建JSON文件名
             String fileName = annotationInfo.getDatasetName() + "-" + annotationInfo.getDatasetSubSet() + ".json";
-            
+            // 获取数据集大小
+            Integer datasetSize = redisDatasetService.getDatasetSize(fileName);
+            if(annotationInfo.getCurrentIndex() > datasetSize)
+                return AjaxResult.success("标注已完成");
             // 从Redis获取当前行的JSON对象
             JSONObject currentJson = redisDatasetService.getDatasetLine(fileName, annotationInfo.getCurrentIndex());
             if (currentJson == null) {
@@ -153,8 +169,6 @@ public class AnnotationServiceImpl implements AnnotationService {
             annotationInfoMapper.updateAnnotationInfo(annotationInfo);
             String referencePath = "answer_datasets/" + fileName;
             // 检查是否完成标注
-            Integer datasetSize = redisDatasetService.getDatasetSize(fileName);
-           
             if (annotationInfo.getCurrentIndex() > datasetSize) {
                 String exportedFileName;
                 if (annotationInfo.getRelabelRound() == null || annotationInfo.getRelabelRound() == 1) {
@@ -166,9 +180,9 @@ public class AnnotationServiceImpl implements AnnotationService {
                         AjaxResult ajaxResult=relabel(userId, datasetName, datasetSubSet, 1);
                         if(ajaxResult.isError())
                         return ajaxResult;
-                        return AjaxResult.error("第一轮标注完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分数据，请进入第二轮标注");
+                        return AjaxResult.success("第一轮标注已完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分数据，请进入第二轮标注");
                     }
-                    return AjaxResult.success("标注完成，数据已导出到文件：" + exportedFileName + "   评分结果：" + scoreResult);
+                    return AjaxResult.success("第一轮标注已完成，数据已导出到文件，评分结果：" + scoreResult);
                 } else if (annotationInfo.getRelabelRound() == 2) {
                     // 第二次标注完成
                     exportedFileName = redisDatasetService.updateToAnswerFile(fileName);
@@ -179,14 +193,14 @@ public class AnnotationServiceImpl implements AnnotationService {
                         if(ajaxResult.isError())
                         return ajaxResult;
                         else
-                        return AjaxResult.error("第二轮标注完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分数据，请进入第三轮标注");
+                        return AjaxResult.success("第二轮标注已完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分数据，请进入第三轮标注");
                     }
-                    return AjaxResult.success("第二轮标注完成，数据已导出到文件，评分结果：" + scoreResult);
+                    return AjaxResult.success("第二轮标注已完成，数据已导出到文件，评分结果：" + scoreResult);
                 } else {
                     // 第三次标注完成
                     exportedFileName = redisDatasetService.updateToAnswerFile(fileName);
                     String scoreResult = evaluateAnswers(referencePath, exportedFileName, annotationInfo);
-                    return AjaxResult.success("第三轮标注完成，数据已导出到文件，最终评分结果：" + scoreResult);
+                    return AjaxResult.success("第三轮标注已完成，数据已导出到文件，最终评分结果：" + scoreResult);
                 }
             }
 
