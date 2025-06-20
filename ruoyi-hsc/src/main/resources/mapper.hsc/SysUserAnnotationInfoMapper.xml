@@ -12,16 +12,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
         <result property="relabelRound" column="relabel_round"/>
+        <result property="round1Result" column="round_1_result"/>
+        <result property="round2Result" column="round_2_result"/>
+        <result property="round3Result" column="round_3_result"/>
     </resultMap>
 
     <select id="selectByUserId" parameterType="Long" resultMap="SysUserAnnotationInfoResult">
-        select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time, relabel_round
+        select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time, relabel_round,
+               round_1_result, round_2_result, round_3_result
         from user_annotation_info
         where user_id = #{userId}
     </select>
 
     <select id="selectByUserAndDataset" resultMap="SysUserAnnotationInfoResult">
-        select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time, relabel_round
+        select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time, relabel_round,
+               round_1_result, round_2_result, round_3_result
         from user_annotation_info
         where user_id = #{userId} 
         and dataset_name = #{datasetName} 
@@ -32,6 +37,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update user_annotation_info
         set current_index = #{currentIndex},
             relabel_round = #{relabelRound},
+            round_1_result = #{round1Result},
+            round_2_result = #{round2Result},
+            round_3_result = #{round3Result},
             update_time = CURRENT_TIMESTAMP
         where user_id = #{userId}
         and dataset_name = #{datasetName} 

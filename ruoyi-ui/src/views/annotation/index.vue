@@ -153,13 +153,14 @@ export default {
           // 显示评分结果
           if (response.msg && response.msg.includes("标注已完成")) {
             const isFailed = response.msg.includes("未达到准确率要求");
-            this.$message(
-             response.msg
-          );
-          if(isFailed){
-          await this.getData();
-            // 清空标签选择
-            this.form.label = '';
+            this.$message({
+              message: response.msg,
+              duration: 5000
+            });
+            if(isFailed){
+            await this.getData();
+              // 清空标签选择
+              this.form.label = '';
             }
           } else {
             this.$message.success('提交成功');
@@ -182,16 +183,11 @@ export default {
       try {
         const response = await checkAccuracy(this.currentSelectedDataset.datasetName, this.currentSelectedDataset.datasetSubSet)
         if (response.code === 200) {
-          this.$alert(response.msg, '当前准确率', {
-            confirmButtonText: '确定',
-            customClass: 'mobile-alert',
-            dangerouslyUseHTMLString: false,
-            closeOnClickModal: true,
-            closeOnPressEscape: true,
-            showCancelButton: false,
-            center: false,
-            showClose: true
-          })
+          this.$message({
+            message: response.msg,
+            type: 'success',
+            duration: 5000
+          });
         }
       } catch (error) {
         console.error('获取准确率失败:', error)

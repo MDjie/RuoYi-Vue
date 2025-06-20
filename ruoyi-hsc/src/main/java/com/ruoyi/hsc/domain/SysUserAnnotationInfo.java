@@ -11,6 +11,10 @@ public class SysUserAnnotationInfo extends BaseEntity {
     private Integer datasetSubSet;
     private Integer relabelRound;
 
+    private String round1Result;
+    private String round2Result;
+    private String round3Result;
+
     public Long getUserId() {
         return userId;
     }
@@ -51,6 +55,30 @@ public class SysUserAnnotationInfo extends BaseEntity {
         this.relabelRound = relabelRound;
     }
 
+    public String getRound1Result() {
+        return round1Result;
+    }
+
+    public void setRound1Result(String round1Result) {
+        this.round1Result = round1Result;
+    }
+
+    public String getRound2Result() {
+        return round2Result;
+    }
+
+    public void setRound2Result(String round2Result) {
+        this.round2Result = round2Result;
+    }
+
+    public String getRound3Result() {
+        return round3Result;
+    }
+
+    public void setRound3Result(String round3Result) {
+        this.round3Result = round3Result;
+    }
+
     @Override
     public String toString() {
         return "SysUserAnnotationInfo{" +
@@ -59,6 +87,9 @@ public class SysUserAnnotationInfo extends BaseEntity {
                 ", currentIndex=" + currentIndex +
                 ", datasetSubSet=" + datasetSubSet +
                 ", relabelRound=" + relabelRound +
+                ", round1Result='" + round1Result + '\'' +
+                ", round2Result='" + round2Result + '\'' +
+                ", round3Result='" + round3Result + '\'' +
                 '}';
     }
 } 

@@ -175,9 +175,11 @@ public class AnnotationServiceImpl implements AnnotationService {
                     // 第一次标注完成
                     exportedFileName = redisDatasetService.exportAnnotatedData(fileName);
                     String scoreResult = evaluateAnswers(referencePath, exportedFileName, annotationInfo);
+                    annotationInfo.setRound1Result(scoreResult);
+                    annotationInfoMapper.updateAnnotationInfo(annotationInfo);
                     if (scoreResult.contains("未达到准确率要求")) {
                         // relabel，currentIndex=1，relabelRound=2
-                        AjaxResult ajaxResult=relabel(userId, datasetName, datasetSubSet, 1);
+                        AjaxResult ajaxResult=relabel(annotationInfo, 1);
                         if(ajaxResult.isError())
                         return ajaxResult;
                         return AjaxResult.success("第一轮标注已完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分数据，请进入第二轮标注");
@@ -187,9 +189,11 @@ public class AnnotationServiceImpl implements AnnotationService {
                     // 第二次标注完成
                     exportedFileName = redisDatasetService.updateToAnswerFile(fileName);
                     String scoreResult = evaluateAnswers(referencePath, exportedFileName, annotationInfo);
+                    annotationInfo.setRound2Result(scoreResult);
+                    annotationInfoMapper.updateAnnotationInfo(annotationInfo);
                     if (scoreResult.contains("未达到准确率要求")) {
                         // relabel，currentIndex=1，relabelRound=3
-                        AjaxResult ajaxResult=relabel(userId, datasetName, datasetSubSet, 2);
+                        AjaxResult ajaxResult=relabel(annotationInfo, 2);
                         if(ajaxResult.isError())
                         return ajaxResult;
                         else
@@ -200,6 +204,8 @@ public class AnnotationServiceImpl implements AnnotationService {
                     // 第三次标注完成
                     exportedFileName = redisDatasetService.updateToAnswerFile(fileName);
                     String scoreResult = evaluateAnswers(referencePath, exportedFileName, annotationInfo);
+                    annotationInfo.setRound3Result(scoreResult);
+                    annotationInfoMapper.updateAnnotationInfo(annotationInfo);
                     return AjaxResult.success("第三轮标注已完成，数据已导出到文件，最终评分结果：" + scoreResult);
                 }
             }
@@ -431,13 +437,8 @@ public class AnnotationServiceImpl implements AnnotationService {
     }
 
     @Override
-    public AjaxResult relabel(Long userId, String datasetName, Integer datasetSubSet, int round) {
+    public AjaxResult relabel(SysUserAnnotationInfo annotationInfo, int round) {
         try {
-            // 1. 获取用户标注信息
-            SysUserAnnotationInfo annotationInfo = annotationInfoMapper.selectByUserAndDataset(userId, datasetName, datasetSubSet);
-            if (annotationInfo == null) {
-                return AjaxResult.error("未找到用户标注信息");
-            }
             String fileName = annotationInfo.getDatasetName() + "-" + annotationInfo.getDatasetSubSet() + ".json";
             String labeledDir = getLabeledDir();
             String answerDir = getAnswerDir();

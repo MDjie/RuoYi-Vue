@@ -27,5 +27,5 @@ public interface AnnotationService {
     /**
      * 重新标注（relabel）
      */
-    AjaxResult relabel(Long userId, String datasetName, Integer datasetSubSet, int round);
+    AjaxResult relabel(com.ruoyi.hsc.domain.SysUserAnnotationInfo annotationInfo, int round);
 } 
