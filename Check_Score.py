@@ -67,7 +67,7 @@ def evaluate_answers(reference_path, test_path):
         precision = precision_score(true_encoded, pred_encoded, average='weighted', zero_division=0)
         recall = recall_score(true_encoded, pred_encoded, average='weighted', zero_division=0)
         f1 = f1_score(true_encoded, pred_encoded, average='weighted', zero_division=0)
-        
+            
         # 输出结果
         result = f"\n在文件{reference_path}的评估结果:\n"
         result += f"总问题数: {total_questions}\n"

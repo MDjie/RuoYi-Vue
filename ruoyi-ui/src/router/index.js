@@ -62,6 +62,11 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/test',
+    component: () => import('@/views/annotation/anonymous_index'),
+    hidden: true
+  },
+  {
     path: '',
     component: Layout,
     redirect: 'index',

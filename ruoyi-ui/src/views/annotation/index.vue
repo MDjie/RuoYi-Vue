@@ -39,7 +39,20 @@
       </el-form-item>
 
       <el-form-item label="标签" class="label-item">
-        <el-select v-model="form.label" placeholder="请选择标签" class="label-select">
+        <!-- 当选项少于5个时使用单选按钮框 -->
+        <div v-if="form.labelOptions.length <= 5" class="radio-group">
+          <el-radio-group v-model="form.label" class="label-radio-group">
+            <el-radio 
+              v-for="item in form.labelOptions" 
+              :key="item.value" 
+              :label="item.value"
+              class="label-radio">
+              {{ item.label }}
+            </el-radio>
+          </el-radio-group>
+        </div>
+        <!-- 当选项多于5个时使用下拉框 -->
+        <el-select v-else v-model="form.label" placeholder="请选择标签" class="label-select">
           <el-option v-for="item in form.labelOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
         </el-select>
       </el-form-item>
@@ -297,6 +310,60 @@ export default {
   width: 100%;
 }
 
+/* 单选按钮组样式 */
+.radio-group {
+  width: 100%;
+}
+
+.label-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  width: 100%;
+}
+
+.label-radio {
+  margin-right: 0 !important;
+  margin-bottom: 10px;
+  padding: 12px 20px;
+  border: 2px solid #e4e7ed;
+  border-radius: 10px;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.label-radio:hover {
+  border-color: #409eff;
+  background: #e6f7ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+}
+
+.label-radio.is-checked {
+  border-color: #409eff;
+  background: linear-gradient(135deg, #409eff 0%, #36a3f7 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+}
+
+.label-radio >>> .el-radio__input {
+  display: none;
+}
+
+.label-radio >>> .el-radio__label {
+  color: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding-left: 0;
+}
+
+.label-radio.is-checked >>> .el-radio__label {
+  color: white;
+}
+
 /* 按钮组 */
 .button-group {
   display: flex;
@@ -415,6 +482,17 @@ export default {
   .el-form-item >>> .el-form-item__label {
     font-size: 14px !important;
   }
+  
+  /* 平板设备单选按钮适配 */
+  .label-radio-group {
+    gap: 12px;
+  }
+  
+  .label-radio {
+    min-width: 100px;
+    padding: 10px 15px;
+    font-size: 13px;
+  }
 }
 
 /* 响应式设计 - 手机设备 */
@@ -472,6 +550,20 @@ export default {
     font-size: 13px !important;
     padding: 10px 15px !important;
   }
+  
+  /* 手机设备单选按钮适配 */
+  .label-radio-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .label-radio {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px 15px;
+    font-size: 14px;
+    text-align: center;
+  }
 }
 
 /* 超小屏幕设备 */
@@ -494,6 +586,12 @@ export default {
     font-size: 13px;
     min-width: 90px;
     max-width: 120px;
+  }
+  
+  /* 超小屏幕单选按钮适配 */
+  .label-radio {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }
 
