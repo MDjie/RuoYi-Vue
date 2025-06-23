@@ -2,13 +2,13 @@
 <div class="annotation-container">
   <div class="annotation-form-wrapper">
     <el-form ref="form" :model="form" label-width="100px" class="annotation-form">
-      
+
       <el-form-item label="选择数据集" class="dataset-select-item">
         <el-select v-model="form.selectedDatasetKey" placeholder="请选择要标注的数据集" @change="onDatasetChange" class="dataset-select">
-          <el-option 
-            v-for="item in form.datasetOptions" 
-            :key="item.datasetName + '-' + item.datasetSubSet" 
-            :label="item.displayName" 
+          <el-option
+            v-for="item in form.datasetOptions"
+            :key="item.datasetName + '-' + item.datasetSubSet"
+            :label="item.displayName"
             :value="item.datasetName + '-' + item.datasetSubSet">
           </el-option>
         </el-select>
@@ -28,11 +28,11 @@
       </el-form-item>
 
       <el-form-item label="文本" class="text-item">
-        <el-input 
-          :disabled="true" 
-          type="textarea" 
-          :autosize="{ minRows: 3, maxRows: 8}"  
-          v-model="form.text" 
+        <el-input
+          :disabled="true"
+          type="textarea"
+          :autosize="{ minRows: 3, maxRows: 8}"
+          v-model="form.text"
           class="text-input"
           placeholder="等待加载文本内容...">
         </el-input>
@@ -42,9 +42,9 @@
         <!-- 当选项少于5个时使用单选按钮框 -->
         <div v-if="form.labelOptions.length <= 5" class="radio-group">
           <el-radio-group v-model="form.label" class="label-radio-group">
-            <el-radio 
-              v-for="item in form.labelOptions" 
-              :key="item.value" 
+            <el-radio
+              v-for="item in form.labelOptions"
+              :key="item.value"
               :label="item.value"
               class="label-radio">
               {{ item.label }}
@@ -52,8 +52,13 @@
           </el-radio-group>
         </div>
         <!-- 当选项多于5个时使用下拉框 -->
-        <el-select v-else v-model="form.label" placeholder="请选择标签" class="label-select">
-          <el-option v-for="item in form.labelOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+        <el-select filterable v-else v-model="form.label" placeholder="请选择或搜索标签" class="label-select">
+          <template v-for="item in groupedLabelOptions">
+            <el-option-group v-if="item.options" :key="item.label" :label="item.label">
+              <el-option v-for="opt in item.options" :key="opt.value" :label="opt.label" :value="opt.value"></el-option>
+            </el-option-group>
+            <el-option v-else :key="item.value" :label="item.label" :value="item.value"></el-option>
+          </template>
         </el-select>
       </el-form-item>
 
@@ -91,9 +96,28 @@ export default {
       if (!this.form.selectedDatasetKey || this.form.datasetOptions.length === 0) {
         return null
       }
-      return this.form.datasetOptions.find(item => 
+      return this.form.datasetOptions.find(item =>
         (item.datasetName + '-' + item.datasetSubSet) === this.form.selectedDatasetKey
       )
+    },
+    groupedLabelOptions() {
+      const options = this.form.labelOptions || [];
+      const groups = [];
+      let currentGroup = null;
+      for (const item of options) {
+        if (/^-\d+$/.test(item.value)) {
+          currentGroup = {
+            label: item.label,
+            options: []
+          };
+          groups.push(currentGroup);
+        } else if (currentGroup) {
+          currentGroup.options.push(item);
+        } else {
+          groups.push(item);
+        }
+      }
+      return groups;
     }
   },
   created() {
@@ -451,43 +475,43 @@ export default {
   .annotation-container {
     padding: 15px;
   }
-  
+
   .annotation-form-wrapper {
     padding: 25px;
     border-radius: 15px;
   }
-  
+
   .dataset-info {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .info-value {
     margin-right: 0;
   }
-  
+
   .button-group {
     flex-direction: row;
     gap: 12px;
     justify-content: center;
   }
-  
+
   .submit-btn, .accuracy-btn {
     flex: 0 1 auto;
     min-width: 120px;
     max-width: 200px;
   }
-  
+
   .el-form-item >>> .el-form-item__label {
     font-size: 14px !important;
   }
-  
+
   /* 平板设备单选按钮适配 */
   .label-radio-group {
     gap: 12px;
   }
-  
+
   .label-radio {
     min-width: 100px;
     padding: 10px 15px;
@@ -500,63 +524,63 @@ export default {
   .annotation-container {
     padding: 10px;
   }
-  
+
   .annotation-form-wrapper {
     padding: 20px;
     border-radius: 12px;
   }
-  
+
   .annotation-form {
     padding: 0;
   }
-  
+
   .dataset-info {
     padding: 12px;
     font-size: 13px;
   }
-  
+
   .info-label, .info-value {
     font-size: 13px;
   }
-  
+
   .text-input >>> .el-textarea__inner {
     font-size: 13px !important;
   }
-  
+
   .button-group {
     flex-direction: column !important;
     align-items: center !important;
     gap: 12px !important;
     justify-content: center !important;
   }
-  
+
   .submit-btn, .accuracy-btn {
     width: 100% !important;
     min-width: 0 !important;
     max-width: none !important;
     margin: 0 !important;
   }
-  
+
   .el-form-item >>> .el-form-item__label {
     font-size: 13px !important;
     line-height: 1.3 !important;
   }
-  
+
   .el-select >>> .el-input__inner {
     font-size: 13px !important;
   }
-  
+
   .el-select >>> .el-select-dropdown__item {
     font-size: 13px !important;
     padding: 10px 15px !important;
   }
-  
+
   /* 手机设备单选按钮适配 */
   .label-radio-group {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .label-radio {
     width: 100% !important;
     min-width: 0 !important;
@@ -571,23 +595,23 @@ export default {
   .annotation-form-wrapper {
     padding: 15px;
   }
-  
+
   .dataset-info {
     padding: 10px;
   }
-  
+
   .button-group {
     gap: 8px;
     justify-content: center;
   }
-  
+
   .submit-btn, .accuracy-btn {
     height: 38px;
     font-size: 13px;
     min-width: 90px;
     max-width: 120px;
   }
-  
+
   /* 超小屏幕单选按钮适配 */
   .label-radio {
     padding: 10px 12px;
@@ -719,7 +743,7 @@ export default {
     left: 0 !important;
     right: 0 !important;
   }
-  
+
   :deep(.el-message-box__content) {
     padding: 10px 8px !important;
     font-size: 13px !important;
@@ -727,14 +751,14 @@ export default {
     overflow-y: auto !important;
     word-break: break-all !important;
   }
-  
+
   :deep(.el-message-box__message) {
     font-size: 13px !important;
     line-height: 1.5 !important;
     text-align: left !important;
     word-break: break-all !important;
   }
-  
+
   :deep(.el-message-box .el-button) {
     width: 100% !important;
     margin: 8px 0 0 0 !important;
@@ -742,7 +766,7 @@ export default {
     font-size: 14px !important;
     display: block !important;
   }
-  
+
   :deep(.el-message-box__btns) {
     display: flex !important;
     flex-direction: column !important;
@@ -755,23 +779,23 @@ export default {
     width: 98vw !important;
     margin: 1vh auto !important;
   }
-  
+
   :deep(.el-message-box__content) {
     padding: 12px !important;
   }
-  
+
   :deep(.el-message-box__message) {
     font-size: 12px !important;
   }
-  
+
   :deep(.el-message-box__header) {
     padding: 12px 12px 0 !important;
   }
-  
+
   :deep(.el-message-box__footer) {
     padding: 0 12px 12px !important;
   }
-  
+
   :deep(.el-message-box .el-button) {
     height: 38px !important;
     font-size: 13px !important;

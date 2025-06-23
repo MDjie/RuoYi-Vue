@@ -96,6 +96,16 @@ public class AnnotationServiceImpl implements AnnotationService {
              if (datasetConfig == null) {
                  return AjaxResult.error("未找到数据集配置信息");
              }
+
+            // 获取准确率要求
+            JSONObject accuracyConfig = datasetConfig.getJSONObject("accuracy");
+            if (accuracyConfig == null) {
+                return AjaxResult.error("未找到准确率配置信息");
+            }
+            Integer accuracy = accuracyConfig.getInteger(String.valueOf(datasetSubSet));
+            if (accuracy == null) {
+                return AjaxResult.error("未找到该子集的准确率配置");
+            }
            
              if (annotationInfo.getCurrentIndex() > datasetSize) {
 
@@ -103,7 +113,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             JSONObject result = new JSONObject();
             result.put("datasetName", annotationInfo.getDatasetName());
             result.put("currentIndex", annotationInfo.getCurrentIndex()-1);
-            result.put("accuracy",datasetConfig.getInteger("accuracy"));
+            result.put("accuracy", accuracy);
             result.put("text", "已完成标注");
             result.put("total", datasetSize);
             result.put("labelOptions", getLabelOptions(datasetConfig));
@@ -123,7 +133,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             JSONObject result = new JSONObject();
             result.put("datasetName", annotationInfo.getDatasetName());
             result.put("currentIndex", annotationInfo.getCurrentIndex());
-            result.put("accuracy", datasetConfig.getInteger("accuracy"));
+            result.put("accuracy", accuracy);
             result.put("text", currentText.getString("text"));
             result.put("total", datasetSize);
             result.put("labelOptions", getLabelOptions(datasetConfig));
@@ -398,13 +408,25 @@ public class AnnotationServiceImpl implements AnnotationService {
             // 获取数据集配置中的准确率要求
             JSONObject datasetConfig = redisDatasetService.getDatasetConfigByName(annotationInfo.getDatasetName());
             if (datasetConfig != null) {
-                int requiredAccuracy = datasetConfig.getInteger("accuracy");
-                result.append("\n准确率要求: ").append(requiredAccuracy).append("%\n");
-                if (accuracy * 100 >= requiredAccuracy) {
-                    result.append("恭喜！您已通过准确率要求！\n");
+                JSONObject accuracyConfig = datasetConfig.getJSONObject("accuracy");
+                Integer datasetSubSet = annotationInfo.getDatasetSubSet();
+                if (accuracyConfig == null || datasetSubSet == null) {
+                    result.append("\n无法找到准确率要求配置。\n");
                 } else {
-                    result.append("很遗憾，您未达到准确率要求。\n");
+                    Integer requiredAccuracy = accuracyConfig.getInteger(String.valueOf(datasetSubSet));
+                    if (requiredAccuracy == null) {
+                        result.append("\n无法找到该子集的准确率要求配置。\n");
+                    } else {
+                        result.append("\n准确率要求: ").append(requiredAccuracy).append("%\n");
+                        if (accuracy * 100 >= requiredAccuracy) {
+                            result.append("恭喜！您已通过准确率要求！\n");
+                        } else {
+                            result.append("很遗憾，您未达到准确率要求。\n");
+                        }
+                    }
                 }
+            } else {
+                result.append("\n未找到数据集配置。\n");
             }
 
             return result.toString();
