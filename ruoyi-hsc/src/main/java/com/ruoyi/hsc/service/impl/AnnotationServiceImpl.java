@@ -192,7 +192,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                         AjaxResult ajaxResult=relabel(annotationInfo, 1);
                         if(ajaxResult.isError())
                         return ajaxResult;
-                        return AjaxResult.success("第一轮标注已完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分数据，请进入第二轮标注");
+                        return AjaxResult.success("第一轮标注已完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分错误数据，请进入第二轮标注");
                     }
                     return AjaxResult.success("第一轮标注已完成，数据已导出到文件，评分结果：" + scoreResult);
                 } else if (annotationInfo.getRelabelRound() == 2) {
@@ -207,7 +207,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                         if(ajaxResult.isError())
                         return ajaxResult;
                         else
-                        return AjaxResult.success("第二轮标注已完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分数据，请进入第三轮标注");
+                        return AjaxResult.success("第二轮标注已完成，标注准确率为"+scoreResult+"\n我们重新提取了小部分错误数据，请进入第三轮标注");
                     }
                     return AjaxResult.success("第二轮标注已完成，数据已导出到文件，评分结果：" + scoreResult);
                 } else {
@@ -503,14 +503,9 @@ public class AnnotationServiceImpl implements AnnotationService {
             }
             // 5. 从答对组随机取与答错组等量数据
             Collections.shuffle(correctList);
-            int n =wrongList.size()<allUserData.size()*0.1? wrongList.size():(int) (allUserData.size()*0.1);
+            int n =wrongList.size()<allUserData.size()*0.15? wrongList.size():(int) (allUserData.size()*0.15);
             List<JSONObject> mergedList = new ArrayList<>();
             mergedList.addAll(wrongList.subList(0,n));
-            if (correctList.size() > n) {
-                mergedList.addAll(correctList.subList(0, n));
-            } else {
-                mergedList.addAll(correctList);
-            }
             // 6. 打乱合并后的数据
             Collections.shuffle(mergedList);
             // 7. 更新Redis缓存（删除原有，写入新数据，更新数据集大小）
