@@ -6,20 +6,20 @@
       <span class="dataset-list">Ag_News、Amazon、Civil_Comment、ED、IMDB、Rotten_Tomato、Tweet、Yahoo。</span>
       其中每个子数据集使用 <b>350</b> 条数据构成人工测试数据集，内部标签划分比较平均模拟全环境测试环境。数据集名称后标注为了合理保证人工标注的质量要求需要达到的最低准确率，若不合格默认认该数据集的人工标注质量低、不认真，最后结果不予采纳，最后的答案视为无效。
     </p>
-    <div class="table-image-row">
+    <div class="table-image-row" style="display: flex;justify-content: center">
       <el-table :data="tableData" border style="width: 100%; max-width: 420px; flex: 1;">
-        <el-table-column prop="name" label="数据集" align="center" width="120" />
-        <el-table-column prop="total" label="总数" align="center" width="80" />
-        <el-table-column prop="classNum" label="分类数" align="center" width="80" />
+        <el-table-column prop="name" label="数据集" align="center"  />
+        <el-table-column prop="total" label="总数" align="center"  />
+        <el-table-column prop="classNum" label="分类数" align="center" />
         <!-- <el-table-column prop="acc" label="最低 ACC 要求" align="center" width="120" /> -->
       </el-table>
           </div>
     <div class="reward-section">
       <b>奖励可选：</b>
       <ol>
-        <li>任意剩余数据集测试达到每 1000 条数据/100 元</li>
-        <li>任意剩余数据集测试达到 5000 条可开人工智能实验室实习证明/项目参加证明</li>
-        <li>任意剩余数据集测试达到 8000 条论文可带（需提前注册 OpenReview）</li>
+        <li>完成任意数据集测试获得35元报酬（单个数据集耗时：30~45min）</li>
+        <li>完成任意8个数据集测试可开人工智能实验室实习证明/项目参加证明</li>
+        <li>完成任意10个数据集测试可带（需提前注册 OpenReview）</li>
               </ol>
           </div>
   </div>
