@@ -501,7 +501,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                     lineNum++;
                 }
             }
-            // 5. 从答对组随机取与答错组等量数据
+
             Collections.shuffle(correctList);
             int n =wrongList.size()<allUserData.size()*0.15? wrongList.size():(int) (allUserData.size()*0.15);
             List<JSONObject> mergedList = new ArrayList<>();

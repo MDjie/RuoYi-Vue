@@ -65,16 +65,16 @@ public class RedisDatasetService {
                 redisTemplate.opsForValue().set("DATASET_CONFIG", sb.toString());
             }
             // 遍历profile/annotation/datasets目录下所有json文件
-            File datasetDir = new File(getDatasetDir());
-            if (!datasetDir.exists()) {
-                datasetDir.mkdirs();
-            }
-            File[] files = datasetDir.listFiles((dir, name) -> name.endsWith(".json"));
-            if (files != null) {
-                for (File file : files) {
-                    loadDatasetToRedis(file.getName());
-                }
-            }
+//            File datasetDir = new File(getDatasetDir());
+//            if (!datasetDir.exists()) {
+//                datasetDir.mkdirs();
+//            }
+//            File[] files = datasetDir.listFiles((dir, name) -> name.endsWith(".json"));
+//            if (files != null) {
+//                for (File file : files) {
+//                    loadDatasetToRedis(file.getName());
+//                }
+//            }
         } catch (Exception e) {
             e.printStackTrace();
         }
