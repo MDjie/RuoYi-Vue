@@ -16,7 +16,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="round2Result" column="round_2_result"/>
         <result property="round3Result" column="round_3_result"/>
     </resultMap>
-
+    <resultMap id="UserAnnotationInfoVOResultMap" type="com.ruoyi.hsc.domain.vo.UserAnnotationInfoVO">
+    <result property="userId" column="user_id"/>
+    <result property="userName" column="user_name"/>
+    <result property="datasetName" column="dataset_name"/>
+    <result property="currentIndex" column="current_index"/>
+    <result property="datasetSubSet" column="dataset_sub_set"/>
+    <result property="createTime" column="create_time"/>
+    <result property="updateTime" column="update_time"/>
+    <result property="relabelRound" column="relabel_round"/>
+    <result property="round1Result" column="round_1_result"/>
+    <result property="round2Result" column="round_2_result"/>
+    <result property="round3Result" column="round_3_result"/>
+    </resultMap>
     <select id="selectByUserId" parameterType="Long" resultMap="SysUserAnnotationInfoResult">
         select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time, relabel_round,
                round_1_result, round_2_result, round_3_result
@@ -55,4 +67,72 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         )
     </insert>
 
+    <select id="selectPageWithUserName" resultMap="UserAnnotationInfoVOResultMap">
+      SELECT
+        u.user_id,
+        u.user_name,
+        a.dataset_name,
+        a.current_index,
+        a.dataset_sub_set,
+        a.create_time,
+        a.update_time,
+        a.relabel_round,
+        a.round_1_result,
+        a.round_2_result,
+        a.round_3_result
+      FROM user_annotation_info a
+      LEFT JOIN sys_user u ON a.user_id = u.user_id
+      <where>
+        <if test="userName != null and userName != ''">
+          AND u.user_name LIKE CONCAT('%', #{userName}, '%')
+        </if>
+        <if test="datasetName != null and datasetName != ''">
+          AND a.dataset_name LIKE CONCAT('%', #{datasetName}, '%')
+        </if>
+      </where>
+      ORDER BY a.update_time DESC
+      LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countWithUserName" resultType="int">
+      SELECT COUNT(1)
+      FROM user_annotation_info a
+      LEFT JOIN sys_user u ON a.user_id = u.user_id
+      <where>
+        <if test="userName != null and userName != ''">
+          AND u.user_name LIKE CONCAT('%', #{userName}, '%')
+        </if>
+        <if test="datasetName != null and datasetName != ''">
+          AND a.dataset_name LIKE CONCAT('%', #{datasetName}, '%')
+        </if>
+      </where>
+    </select>
+
+    <delete id="deleteAnnotation">
+      DELETE FROM user_annotation_info
+      WHERE user_id = #{userId}
+        AND dataset_name = #{datasetName}
+        AND dataset_sub_set = #{datasetSubSet}
+    </delete>
+
+    <update id="updateAnnotation">
+      UPDATE user_annotation_info
+      SET user_id = #{userId},
+          current_index = #{currentIndex},
+          relabel_round = #{relabelRound},
+          update_time = CURRENT_TIMESTAMP
+      WHERE dataset_name = #{datasetName}
+        AND dataset_sub_set = #{datasetSubSet}
+    </update>
+
+    <select id="selectByDatasetAndSubSet" resultMap="SysUserAnnotationInfoResult">
+      select user_id, dataset_name, current_index, dataset_sub_set, create_time, update_time, relabel_round,
+             round_1_result, round_2_result, round_3_result
+      from user_annotation_info
+      where dataset_name = #{datasetName} and dataset_sub_set = #{datasetSubSet}
+    </select>
+
+    <!-- 
+    标注管理页面所需的新增查询生成在此处
+    -->
 </mapper> 

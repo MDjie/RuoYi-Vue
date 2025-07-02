@@ -18,7 +18,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------
--- Table structure for user_annotation_info
+-- Table structure for user_annotation_info 此表就是标注管理信息表
 -- ----------------------------
 DROP TABLE IF EXISTS `user_annotation_info`;
 CREATE TABLE `user_annotation_info`  (

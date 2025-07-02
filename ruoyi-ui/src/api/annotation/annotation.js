@@ -40,3 +40,49 @@ export function checkAccuracy(datasetName, datasetSubSet) {
     }
   })
 }
+
+// 标注管理页面的分页查询API
+export function getAnnotationManagementList(params) {
+  return request({
+    url: '/annotation/management/list',
+    method: 'get',
+    params
+  })
+}
+
+// 删除标注信息
+export function deleteAnnotation(data) {
+  return request({
+    url: '/annotation/management/delete',
+    method: 'post',
+    data
+  })
+}
+
+// 修改标注信息
+export function updateAnnotation(data) {
+  return request({
+    url: '/annotation/management/update',
+    method: 'post',
+    data
+  })
+}
+
+// 获取正常状态用户列表
+export function getNormalUserList() {
+  return request({
+    url: '/system/user/normalList',
+    method: 'get'
+  })
+}
+
+// 重做最后一轮
+export function relabelAnnotation(data) {
+  return request({
+    url: '/annotation/management/relabel',
+    method: 'post',
+    data
+  })
+}
+
+//标注管理页面的api生成在此处

@@ -31,6 +31,7 @@ import com.ruoyi.system.service.ISysDeptService;
 import com.ruoyi.system.service.ISysPostService;
 import com.ruoyi.system.service.ISysRoleService;
 import com.ruoyi.system.service.ISysUserService;
+import java.util.Map;
 
 /**
  * 用户信息
@@ -252,5 +253,10 @@ public class SysUserController extends BaseController
     public AjaxResult deptTree(SysDept dept)
     {
         return success(deptService.selectDeptTreeList(dept));
+    }
+
+    @GetMapping("/normalList")
+    public List<Map<String, Object>> getNormalUserList() {
+        return userService.getNormalUserList();
     }
 }

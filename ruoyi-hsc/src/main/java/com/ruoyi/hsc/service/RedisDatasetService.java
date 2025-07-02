@@ -22,6 +22,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.HashMap;
 
+/**
+ * 用于管理Redis中的数据集的service类
+ */
 @Service
 public class RedisDatasetService {
 

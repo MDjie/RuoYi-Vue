@@ -220,4 +220,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach> 
  	</delete>
 	
+	<select id="selectNormalUserList" resultType="java.util.HashMap">
+      SELECT user_id AS userId, user_name AS userName
+      FROM sys_user
+      WHERE status = '0'
+    </select>
+	
 </mapper> 

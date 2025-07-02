@@ -1,7 +1,9 @@
 package com.ruoyi.hsc.domain;
 
 import com.ruoyi.common.core.domain.BaseEntity;
-
+/**
+ * 标注管理信息表的实体类
+ */
 public class SysUserAnnotationInfo extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
